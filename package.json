@@ -1,0 +1,26 @@
+{
+  "name": "lomad",
+  "version": "1.0.0",
+  "description": "A utility for administrating the LOOT masterlists",
+  "main": "lomad.js",
+  "bin": {
+    "lomad": "lomad.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/loot/lomad.git"
+  },
+  "author": "Oliver Hamlet <oliver.hamlet@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^2.9.0",
+    "octokat": "^0.4.18"
+  },
+  "bugs": {
+    "url": "https://github.com/loot/lomad/issues"
+  },
+  "homepage": "https://github.com/loot/lomad#readme"
+}
