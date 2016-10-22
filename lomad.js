@@ -41,11 +41,9 @@ class Repository {
     });
   }
 
-  createNewDefaultBranch(newBranch) {
+  createBranchFromDefault(newBranch) {
     return this.getDefaultBranch().then((defaultBranch) => {
       return this.createNewBranch(defaultBranch, newBranch);
-    }).then(() => {
-      return this.setDefaultBranch(newBranch);
     }).catch((error) => {
       console.log(error);
     });
@@ -178,9 +176,18 @@ function parseArguments() {
     .option('-t, --token <token>', 'GitHub Personal Access Token (required)')
     .option('-r, --repository <name>', 'A repeatable option for specifying repositories to operate on', collect, [])
     .option('-a, --all-repositories', 'Operate on all known repositories (' + knownRepositories.join(', ') + ')')
-    .option('-b, --branch <name>', 'Create a new default branch with the given name')
-    .option('-n, --new-version <version>', 'Update the "LOOT update available" message condition to use the given version number')
-    .parse(process.argv);
+    .option('-b, --branch <name>', 'Create a new branch with the given name from the current default branch')
+    .option('-d, --default-branch <name>', 'Set the default branch')
+    .option('-n, --new-version <version>', 'Update the "LOOT update available" message condition to use the given version number');
+
+  program.on('--help', () => {
+    console.log('If a combination of -b, -d and -n are specified, they act in order:\n');
+    console.log('1. The branch is created')
+    console.log('2. The default branch is set')
+    console.log('3. The LOOT version condition is updated\n')
+  });
+
+  program.parse(process.argv);
 
   if (!program.token || (!program.repository.length && !program.allRepositories)) {
     program.help();
@@ -195,6 +202,7 @@ function parseArguments() {
     branch: program.branch,
     repositories: program.repository,
     version: program.newVersion,
+    defaultBranch: program.defaultBranch,
   };
 }
 
@@ -210,7 +218,13 @@ function main() {
     let promise = Promise.resolve();
 
     if (settings.branch) {
-      promise = repository.createNewDefaultBranch(settings.branch);
+      promise = repository.createBranchFromDefault(settings.branch);
+    }
+
+    if (settings.defaultBranch) {
+      promise = promise.then(() => {
+        return repository.setDefaultBranch(settings.defaultBranch);
+      })
     }
 
     if (settings.version) {
