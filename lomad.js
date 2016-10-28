@@ -166,6 +166,7 @@ function parseArguments() {
   const knownRepositories = [
     'oblivion',
     'skyrim',
+    'skyrimse',
     'fallout3',
     'falloutnv',
     'fallout4',
