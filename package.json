@@ -1,6 +1,6 @@
 {
   "name": "lomad",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A utility for administrating the LOOT masterlists",
   "main": "lomad.js",
   "bin": {
