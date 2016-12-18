@@ -113,6 +113,42 @@ class Repository {
         return this.commitTree(parentCommitHash, response.sha, message);
       });
   }
+
+  updateFile(filename, commitMessage, editContentFunction, newContent) {
+    let defaultBranch;
+    let commitHash;
+
+    return this.getDefaultBranch()
+      .then((branch) => {
+        defaultBranch = branch;
+        return this.getBranchHeadHash(branch);
+      })
+      .then((hash) => {
+        commitHash = hash;
+        return this.getTree(hash);
+      })
+      .then((response) => {
+        return this.getFileBlobHash(response.tree, filename);
+      })
+      .then((hash) => {
+        return this.getTextFileBlobContent(hash);
+      })
+      .then((content) => {
+        return editContentFunction(content, newContent);
+      })
+      .then((content) => {
+        return this.commitFileChange(commitHash,
+          filename,
+          content,
+          commitMessage);
+      })
+      .then((response) => {
+        return this.updateBranchHead(defaultBranch, response.sha);
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  }
 }
 
 function replaceLootMessageVersion(content, newVersion) {
@@ -120,41 +156,19 @@ function replaceLootMessageVersion(content, newVersion) {
   return content.replace(regexp, `version("LOOT", "${newVersion}", <)`);
 }
 
-function updateLootMessageVersion(repository, newVersion) {
-  const filename = 'masterlist.yaml';
-  let defaultBranch;
-  let commitHash;
+function replaceMetadataValidatorUrl(content, newMetadataValidatorVersion) {
+  const regexp = /download\/\d+\.\d+.\d+\//;
+  return content.replace(regexp, `download/${newMetadataValidatorVersion}/`);
+}
 
-  return repository.getDefaultBranch()
-    .then((branch) => {
-      defaultBranch = branch;
-      return repository.getBranchHeadHash(branch);
-    })
-    .then((hash) => {
-      commitHash = hash;
-      return repository.getTree(hash);
-    })
-    .then((response) => {
-      return repository.getFileBlobHash(response.tree, filename);
-    })
-    .then((hash) => {
-      return repository.getTextFileBlobContent(hash);
-    })
-    .then((content) => {
-      return replaceLootMessageVersion(content, newVersion);
-    })
-    .then((content) => {
-      return repository.commitFileChange(commitHash,
-        filename,
-        content,
-        'Update LOOT version check for new release message');
-    })
-    .then((response) => {
-      return repository.updateBranchHead(defaultBranch, response.sha);
-    })
-    .catch((error) => {
-      console.log(error);
-    });
+
+
+function updateLootMessageVersion(repository, newVersion) {
+  return repository.updateFile('masterlist.yaml', 'Update LOOT version check for new release message', replaceLootMessageVersion, newVersion);
+}
+
+function updateMasterlistValidator(repository, masterlistValidatorVersion) {
+  return repository.updateFile('.travis.yml', 'Update metadata validator used', replaceMetadataValidatorUrl, masterlistValidatorVersion);
 }
 
 function collect(value, collection) {
@@ -179,7 +193,8 @@ function parseArguments() {
     .option('-a, --all-repositories', 'Operate on all known repositories (' + knownRepositories.join(', ') + ')')
     .option('-b, --branch <name>', 'Create a new branch with the given name from the current default branch')
     .option('-d, --default-branch <name>', 'Set the default branch')
-    .option('-n, --new-version <version>', 'Update the "LOOT update available" message condition to use the given version number');
+    .option('-n, --new-version <version>', 'Update the "LOOT update available" message condition to use the given version number')
+    .option('-m, --masterlist-validator <version>', 'Update the masterlist validator used to the given version');
 
   program.on('--help', () => {
     console.log('If a combination of -b, -d and -n are specified, they act in order:\n');
@@ -204,6 +219,7 @@ function parseArguments() {
     repositories: program.repository,
     version: program.newVersion,
     defaultBranch: program.defaultBranch,
+    masterlistValidator: program.masterlistValidator,
   };
 }
 
@@ -230,8 +246,14 @@ function main() {
 
     if (settings.version) {
       promise.then(() => {
-          updateLootMessageVersion(repository, settings.version);
+        updateLootMessageVersion(repository, settings.version);
       });
+    }
+
+    if (settings.masterlistValidator) {
+      promise.then(() => {
+        updateMasterlistValidator(repository, settings.masterlistValidator);
+      })
     }
   });
 }
