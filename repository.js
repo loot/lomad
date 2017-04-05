@@ -108,7 +108,7 @@ class Repository {
       });
   }
 
-  updateFile(filename, commitMessage, editContentFunction, newContent) {
+  getFile(filename) {
     let defaultBranch;
     let commitHash;
 
@@ -128,7 +128,23 @@ class Repository {
         return this.getTextFileBlobContent(hash);
       })
       .then((content) => {
-        return editContentFunction(content, newContent);
+        return {
+          branch: defaultBranch,
+          commit: commitHash,
+          content,
+        }
+      });
+  }
+
+  updateFile(filename, commitMessage, editContentFunction, newContent) {
+    let defaultBranch;
+    let commitHash;
+
+    return this.getFile(filename)
+      .then((file) => {
+        defaultBranch = file.branch;
+        commitHash = file.commit;
+        return editContentFunction(file.content, newContent);
       })
       .then((content) => {
         return this.commitFileChange(commitHash,
