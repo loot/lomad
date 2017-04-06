@@ -99,7 +99,7 @@ function parseArguments() {
   ];
 
   program
-    .version('1.2.0')
+    .version('1.3.0')
     .option('-t, --token <token>', 'GitHub Personal Access Token (required)')
     .option('-r, --repository <name>', 'A repeatable option for specifying repositories to operate on', collect, [])
     .option('-a, --all-repositories', 'Operate on all known repositories (' + knownRepositories.join(', ') + ')')

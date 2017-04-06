@@ -3,6 +3,18 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this
 project adheres to [Semantic Versioning](http://semver.org/).
 
+## 1.3.0 - 2017-04-06
+
+### Added
+
+- The ability to check the URLs in the masterlists for validity. Invalid URLs
+  are any that are not HTTP or HTTPS, or which give non-200 response codes when
+  queried with a `HEAD` request.
+
+### Changed
+
+- The Octokat dependency has been updated to v0.6.4.
+
 ## 1.2.0 - 2016-12-18
 
 ### Added
