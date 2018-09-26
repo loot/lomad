@@ -1,6 +1,6 @@
 # lomad
 
-[![npm](https://img.shields.io/npm/v/lomad.svg)](https://www.npmjs.com/package/lomad)
+[![npm](https://img.shields.io/npm/v/lomad.svg)](https://www.npmjs.com/package/lomad) [![Greenkeeper badge](https://badges.greenkeeper.io/loot/lomad.svg)](https://greenkeeper.io/)
 
 A utility for administrating the LOOT masterlists.
 
