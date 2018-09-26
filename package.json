@@ -17,7 +17,7 @@
   "license": "MIT",
   "dependencies": {
     "commander": "^2.9.0",
-    "octokat": "^0.6.4"
+    "octokat": "^0.10.0"
   },
   "bugs": {
     "url": "https://github.com/loot/lomad/issues"
