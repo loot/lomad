@@ -8,18 +8,9 @@ const program = require('commander');
 const Repository = require('./repository').Repository;
 const url = require('url');
 
-function replaceLootMessageVersion(content, newVersion) {
-  const regexp = /version\("LOOT", "[\d.]+", <\)/;
-  return content.replace(regexp, `version("LOOT", "${newVersion}", <)`);
-}
-
 function replaceMetadataValidatorUrl(content, newMetadataValidatorVersion) {
   const regexp = /download\/\d+\.\d+.\d+\//;
   return content.replace(regexp, `download/${newMetadataValidatorVersion}/`);
-}
-
-function updateLootMessageVersion(repository, newVersion) {
-  return repository.updateFile('masterlist.yaml', 'Update LOOT version check for new release message', replaceLootMessageVersion, newVersion);
 }
 
 function updateMasterlistValidator(repository, masterlistValidatorVersion) {
@@ -110,7 +101,6 @@ function parseArguments() {
     .option('-a, --all-repositories', 'Operate on all known repositories (' + knownRepositories.join(', ') + ')')
     .option('-b, --branch <name>', 'Create a new branch with the given name from the current default branch')
     .option('-d, --default-branch <name>', 'Set the default branch')
-    .option('-n, --new-version <version>', 'Update the "LOOT update available" message condition to use the given version number')
     .option('-m, --masterlist-validator <version>', 'Update the masterlist validator used to the given version')
     .option('-c, --check-urls', 'Check for and print out invalid URLs (non-200 responses)');
 
@@ -118,7 +108,6 @@ function parseArguments() {
     console.log('If a combination of -b, -d and -n are specified, they act in order:\n');
     console.log('1. The branch is created')
     console.log('2. The default branch is set')
-    console.log('3. The LOOT version condition is updated\n')
   });
 
   program.parse(process.argv);
@@ -135,7 +124,6 @@ function parseArguments() {
     token: program.token,
     branch: program.branch,
     repositories: program.repository,
-    version: program.newVersion,
     defaultBranch: program.defaultBranch,
     masterlistValidator: program.masterlistValidator,
     checkUrls: program.checkUrls,
@@ -161,12 +149,6 @@ function main() {
       promise = promise.then(() => {
         return repository.setDefaultBranch(settings.defaultBranch);
       })
-    }
-
-    if (settings.version) {
-      promise.then(() => {
-        updateLootMessageVersion(repository, settings.version);
-      });
     }
 
     if (settings.masterlistValidator) {
