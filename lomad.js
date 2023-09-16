@@ -90,12 +90,17 @@ function collect(value, collection) {
 
 function parseArguments() {
   const knownRepositories = [
+    'morrowind',
     'oblivion',
     'skyrim',
+    'enderal',
     'skyrimse',
+    'skyrimvr',
     'fallout3',
     'falloutnv',
     'fallout4',
+    'fallout4vr',
+    'starfield'
   ];
 
   program
