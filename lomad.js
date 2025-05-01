@@ -81,11 +81,9 @@ function parseArguments() {
     'skyrim',
     'enderal',
     'skyrimse',
-    'skyrimvr',
     'fallout3',
     'falloutnv',
     'fallout4',
-    'fallout4vr',
     'starfield'
   ];
 
