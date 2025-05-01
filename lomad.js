@@ -6,7 +6,6 @@ const https = require('https');
 const Octokat = require('octokat');
 const { program } = require('commander');
 const Repository = require('./repository').Repository;
-const url = require('url');
 
 function replaceMetadataValidatorUrl(content, newMetadataValidatorVersion) {
   const regexp = /download\/\d+\.\d+.\d+\//;
@@ -18,14 +17,14 @@ function updateMasterlistValidator(repository, masterlistValidatorVersion) {
 }
 
 function checkUrl(urlToCheck) {
-  let parsedUrl = url.parse(urlToCheck);
+  let parsedUrl = new URL(urlToCheck);
 
   const options = {
     method: 'HEAD',
     protocol: parsedUrl.protocol,
     hostname: parsedUrl.hostname,
     port: parsedUrl.port,
-    path: parsedUrl.path,
+    path: `${parsedUrl.path}/${parsedUrl.search}`,
     agent: parsedUrl.protocol === 'https:' ? https.globalAgent : http.globalAgent,
   };
 
