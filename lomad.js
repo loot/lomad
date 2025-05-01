@@ -3,7 +3,7 @@
 
 const http = require('http');
 const https = require('https');
-const Octokat = require('octokat');
+const { Octokit } = require('octokit');
 const { program } = require('commander');
 const Repository = require('./repository').Repository;
 
@@ -127,12 +127,12 @@ If both -b/--branch and -d/--default-branch are specified, the branch is created
 function main() {
   const settings = parseArguments();
 
-  const github = new Octokat({
-    token: settings.token,
+  const octokit = new Octokit({
+    auth: settings.token,
   });
 
   settings.repositories.forEach((repositoryName) => {
-    const repository = new Repository(github, repositoryName);
+    const repository = new Repository(octokit, repositoryName);
     let promise = Promise.resolve();
 
     if (settings.branch) {

@@ -1,50 +1,67 @@
+const { Octokit } = require('octokit');
+
 class Repository {
-  constructor(apiHandle, name) {
-    this.handle = apiHandle.repos('loot', name);
-    this.name = name;
+  /** @param {Octokit} octokit */
+  constructor(octokit, name) {
+    this.client = octokit.rest;
+    this.commonParams = {
+      owner: 'loot',
+      repo: name
+    };
   }
 
-  getDefaultBranch() {
-    return this.handle.fetch().then((response) => {
-      return response.defaultBranch;
-    });
+  async getDefaultBranch() {
+    const response = await this.client.repos.get(this.commonParams);
+
+    return response.data.default_branch;
   }
 
   setDefaultBranch(newDefaultBranch) {
-    return this.handle.update({
-      name: this.name,
+    return this.client.repos.update({
       default_branch: newDefaultBranch,
+      ...this.commonParams
     });
   }
 
-  getBranchHeadHash(branch) {
-    return this.handle.git.refs(`heads/${branch}`).fetch().then((response) => {
-      return response.object.sha;
+  async getBranchHeadHash(branch) {
+    const response = await this.client.git.getRef({
+      ref: `heads/${branch}`,
+      ...this.commonParams
     });
+
+    return response.data.object.sha;
   }
 
-  createNewBranch(sourceBranch, newBranch) {
-    return this.getBranchHeadHash(sourceBranch).then((sha) => {
-      return this.handle.git.refs.create({
-        ref: `refs/heads/${newBranch}`,
-        sha,
-      }).catch((error) => {
-        console.log(`Error creating new branch "${newBranch}":`);
-        console.log(error);
-      });
-    });
-  }
+  async createNewBranch(sourceBranch, newBranch) {
+    const sha = await this.getBranchHeadHash(sourceBranch);
 
-  createBranchFromDefault(newBranch) {
-    return this.getDefaultBranch().then((defaultBranch) => {
-      return this.createNewBranch(defaultBranch, newBranch);
+    return this.client.git.createRef({
+      ...this.commonParams,
+      ref: `refs/heads/${newBranch}`,
+      sha,
     }).catch((error) => {
+      console.log(`Error creating new branch "${newBranch}":`);
       console.log(error);
+      return error;
     });
   }
 
-  getTree(commitHash) {
-    return this.handle.git.trees(commitHash).fetch();
+  async createBranchFromDefault(newBranch) {
+    const defaultBranch = await this.getDefaultBranch();
+
+    return this.createNewBranch(defaultBranch, newBranch);
+  }
+
+  async getTree(commitHash) {
+    const response = await this.client.git.getTree({
+      ...this.commonParams,
+      tree_sha: commitHash,
+    });
+
+    return {
+      sha: response.data.sha,
+      tree: response.data.tree,
+    };
   }
 
   getFileBlobHash(tree, filename) {
@@ -59,14 +76,18 @@ class Repository {
     return blob.sha;
   }
 
-  getTextFileBlobContent(blobHash) {
-    return this.handle.git.blobs(blobHash).fetch().then((response) => {
-      return (new Buffer(response.content, 'base64')).toString('utf8');
+  async getTextFileBlobContent(blobHash) {
+    const response = await this.client.git.getBlob({
+      ...this.commonParams,
+      file_sha: blobHash,
     });
+
+    return Buffer.from(response.data.content, response.data.encoding).toString('utf8');
   }
 
   createTreeWithBlob(parentTreeHash, blobHash, path) {
-    return this.handle.git.trees.create({
+    return this.client.git.createTree({
+      ...this.commonParams,
       base_tree: parentTreeHash,
       tree: [{
         path,
@@ -78,7 +99,8 @@ class Repository {
   }
 
   commitTree(parentCommitHash, treeHash, message) {
-    return this.handle.git.commits.create({
+    return this.client.git.createCommit({
+      ...this.commonParams,
       message: message,
       tree: treeHash,
       parents: [
@@ -88,76 +110,55 @@ class Repository {
   }
 
   updateBranchHead(branch, commitHash) {
-    return this.handle.git.refs(`heads/${branch}`).update({
+    return this.client.git.updateRef({
+      ...this.commonParams,
+      ref: `heads/${branch}`,
       sha: commitHash,
     });
   }
 
-  commitFileChange(parentCommitHash, filename, content, message) {
-    let parentTreeHash;
-    return this.getTree(parentCommitHash)
-      .then((response) => {
-        parentTreeHash = response.sha;
-        return this.handle.git.blobs.create({content});
-      })
-      .then((response) => {
-        return this.createTreeWithBlob(parentTreeHash, response.sha, filename);
-      })
-      .then((response) => {
-        return this.commitTree(parentCommitHash, response.sha, message);
-      });
+  async commitFileChange(parentCommitHash, filename, content, message) {
+    const { sha: parentTreeHash } = await this.getTree(parentCommitHash);
+
+    const blobResponse = await this.client.git.createBlob({
+      ...this.commonParams,
+      content,
+    });
+
+    const treeResponse = await this.createTreeWithBlob(parentTreeHash, blobResponse.data.sha, filename);
+
+    return this.commitTree(parentCommitHash, treeResponse.data.sha, message);
   }
 
-  getFile(filename) {
-    let defaultBranch;
-    let commitHash;
+  async getFile(filename) {
+    const defaultBranchName = await this.getDefaultBranch();
 
-    return this.getDefaultBranch()
-      .then((branch) => {
-        defaultBranch = branch;
-        return this.getBranchHeadHash(branch);
-      })
-      .then((hash) => {
-        commitHash = hash;
-        return this.getTree(hash);
-      })
-      .then((response) => {
-        return this.getFileBlobHash(response.tree, filename);
-      })
-      .then((hash) => {
-        return this.getTextFileBlobContent(hash);
-      })
-      .then((content) => {
-        return {
-          branch: defaultBranch,
-          commit: commitHash,
-          content,
-        }
-      });
+    const defaultBranchHash = await this.getBranchHeadHash(defaultBranchName);
+
+    const defaultBranchTree = await this.getTree(defaultBranchHash);
+
+    const fileBlobHash = await this.getFileBlobHash(defaultBranchTree.tree, filename);
+
+    const fileContent = await this.getTextFileBlobContent(fileBlobHash);
+
+    return {
+      branch: defaultBranchName,
+      commit: defaultBranchHash,
+      content: fileContent,
+    };
   }
 
-  updateFile(filename, commitMessage, editContentFunction, newContent) {
-    let defaultBranch;
-    let commitHash;
+  async updateFile(filename, commitMessage, editContentFunction, newContent) {
+    const file = await this.getFile(filename);
 
-    return this.getFile(filename)
-      .then((file) => {
-        defaultBranch = file.branch;
-        commitHash = file.commit;
-        return editContentFunction(file.content, newContent);
-      })
-      .then((content) => {
-        return this.commitFileChange(commitHash,
+    const content = editContentFunction(file.content, newContent);
+
+    const response = await this.commitFileChange(file.commit,
           filename,
           content,
           commitMessage);
-      })
-      .then((response) => {
-        return this.updateBranchHead(defaultBranch, response.sha);
-      })
-      .catch((error) => {
-        console.log(error);
-      });
+
+    return this.updateBranchHead(file.branch, response.data.sha);
   }
 }
 
