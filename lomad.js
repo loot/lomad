@@ -75,6 +75,7 @@ function checkUrls(repository) {
 
 function parseArguments() {
   const knownRepositories = [
+    'prelude',
     'morrowind',
     'oblivion',
     'skyrim',
