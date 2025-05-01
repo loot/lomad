@@ -4,7 +4,7 @@
 const http = require('http');
 const https = require('https');
 const Octokat = require('octokat');
-const program = require('commander');
+const { program } = require('commander');
 const Repository = require('./repository').Repository;
 const url = require('url');
 
@@ -74,11 +74,6 @@ function checkUrls(repository) {
     }).catch(console.log);
 }
 
-function collect(value, collection) {
-  collection.push(value);
-  return collection;
-}
-
 function parseArguments() {
   const knownRepositories = [
     'morrowind',
@@ -96,37 +91,38 @@ function parseArguments() {
 
   program
     .version('1.3.0')
-    .option('-t, --token <token>', 'GitHub Personal Access Token (required)')
-    .option('-r, --repository <name>', 'A repeatable option for specifying repositories to operate on', collect, [])
-    .option('-a, --all-repositories', 'Operate on all known repositories (' + knownRepositories.join(', ') + ')')
+    .requiredOption('-t, --token <token>', 'GitHub Personal Access Token (required)')
+    .option('-r, --repository <names...>', 'A repeatable option for specifying repositories to operate on')
+    .option('-a, --all-repositories', `Operate on all known repositories (${knownRepositories.join(', ')})`)
     .option('-b, --branch <name>', 'Create a new branch with the given name from the current default branch')
     .option('-d, --default-branch <name>', 'Set the default branch')
     .option('-m, --masterlist-validator <version>', 'Update the masterlist validator used to the given version')
     .option('-c, --check-urls', 'Check for and print out invalid URLs (non-200 responses)');
 
-  program.on('--help', () => {
-    console.log('If a combination of -b, -d and -n are specified, they act in order:\n');
-    console.log('1. The branch is created')
-    console.log('2. The default branch is set')
-  });
+  program.addHelpText('after', `
+If both -b/--branch and -d/--default-branch are specified, the branch is created and then the default branch is set.
+`);
 
-  program.parse(process.argv);
+  program.parse();
 
-  if (!program.token || (!program.repository.length && !program.allRepositories)) {
-    program.help();
+  const options = program.opts();
+
+  if (!options.repository && !options.allRepositories) {
+    console.log("error: at least one repository or -a or --all-repositories must be specified");
+    process.exit(1);
   }
 
-  if (program.allRepositories) {
-    program.repository = knownRepositories;
+  if (options.allRepositories) {
+    options.repository = knownRepositories;
   }
 
   return {
-    token: program.token,
-    branch: program.branch,
-    repositories: program.repository,
-    defaultBranch: program.defaultBranch,
-    masterlistValidator: program.masterlistValidator,
-    checkUrls: program.checkUrls,
+    token: options.token,
+    branch: options.branch,
+    repositories: options.repository,
+    defaultBranch: options.defaultBranch,
+    masterlistValidator: options.masterlistValidator,
+    checkUrls: options.checkUrls,
   };
 }
 

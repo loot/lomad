@@ -16,7 +16,7 @@
   "author": "Oliver Hamlet <oliver.hamlet@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "commander": "^2.9.0",
+    "commander": "^13.1.0",
     "octokat": "^0.6.4"
   },
   "bugs": {
