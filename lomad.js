@@ -13,7 +13,7 @@ function replaceMetadataValidatorUrl(content, newMetadataValidatorVersion) {
 }
 
 function updateMasterlistValidator(repository, masterlistValidatorVersion) {
-  return repository.updateFile('.travis.yml', 'Update metadata validator used', replaceMetadataValidatorUrl, masterlistValidatorVersion);
+  return repository.updateFile('.github/workflows/ci.yml', 'Update metadata validator used', replaceMetadataValidatorUrl, masterlistValidatorVersion);
 }
 
 function checkUrl(urlToCheck) {
@@ -78,6 +78,7 @@ function parseArguments() {
     'prelude',
     'morrowind',
     'oblivion',
+    'oblivion-remastered',
     'skyrim',
     'enderal',
     'skyrimse',
